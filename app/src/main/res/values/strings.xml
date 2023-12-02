@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Twitter_SearchesApp</string>
+    <string name="query_prompt">Ingresa aquí tu búsqueda en Twitter</string>
+    <string name="tag_prompt">Etiqueta tu búsqueda</string>
+    <string name="save_description">Toca este botón para guardar tu búsqueda etiquetada</string>
+    <string name="tagged_searches">Búsquedas Etiquetadas</string>
+    <string name="search_URL">http://mobile.twitter.com/search?q=</string>
+    <string name="share_edit_delete_title">Compartir, Editar o Borrar la búsqueda etiquetada como &quot;%s&quot;</string>
+    <string name="cancel">Cancelar</string>
+    <string name="share_subject">Búsqueda en Twitter que podría interesarte</string>
+    <string name="share_message">Echa un vistazo a los resultados de esta búsqueda en Twitter: %s</string>
+    <string name="share_search">Compartir Búsqueda a:</string>
+    <string name="confirm_message">¿Estás seguro de que quieres borrar la búsqueda &quot;%s&quot;?</string>
+    <string name="delete">Borrar</string>
+</resources>
