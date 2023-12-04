@@ -1,240 +1,240 @@
 package esteban.g.twitter_searchesapp;
 
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
+import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.TextView;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
-    // name of SharedPreferences XML file that stores the saved searches
+import android.app.AlertDialog;
+import android.app.ListActivity;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.TextView;
+import android.view.Menu;
+import android.view.MenuItem;
+
+public class MainActivity extends ListActivity {
+
     private static final String SEARCHES = "searches";
-    private EditText queryEditText; // where user enters a query
-    private EditText tagEditText; // where user enters a query's tag
-    private FloatingActionButton saveFloatingActionButton; // save search
-    private SharedPreferences savedSearches;
-    private List<String> tags; // list of tags for saved searches
-    private SearchesAdapter adapter; // for binding data to RecyclerView
 
-    // configures the GUI and registers event listeners
+    private EditText queryEditText; // user's query search
+    private EditText tagEditText; // user's query tag label
+    private SharedPreferences savedSearches; // user's searches
+    private ArrayList<String> tags; // list of user's tags for saved searches
+    private ArrayAdapter<String> adapter; // binds tags to ListView
+    private FloatingActionButton saveButton; // save button
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // to reference ui edit texts
+        queryEditText =  findViewById(R.id.queryEditText);
+        tagEditText =  findViewById(R.id.tagEditText);
 
-        // get references to the EditTexts and add TextWatchers to them
-        queryEditText = ((TextInputLayout) findViewById(
-                R.id.queryTextInputLayout)).getEditText();
-        queryEditText.addTextChangedListener(textWatcher);
-        tagEditText = ((TextInputLayout) findViewById(
-                R.id.tagTextInputLayout)).getEditText();
-        tagEditText.addTextChangedListener(textWatcher);
-
-        // get the SharedPreferences containing the user's saved searches
         savedSearches = getSharedPreferences(SEARCHES, MODE_PRIVATE);
 
-        tags = new ArrayList<>(savedSearches.getAll().keySet());
+        // store saved tags in the tags ArrayList
+        tags = new ArrayList<String>(savedSearches.getAll().keySet());
         Collections.sort(tags, String.CASE_INSENSITIVE_ORDER);
 
-        RecyclerView recyclerView =
-                (RecyclerView) findViewById(R.id.recyclerView);
+        // Utilize the adaptor to join the key value pairs
+        adapter = new ArrayAdapter<String>(this, R.layout.list_item, tags);
+        setListAdapter(adapter);
 
-        // use a LinearLayoutManager to display items in a vertical list
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // register the listener to save/edit search
+        saveButton = findViewById(R.id.saveButton);
+        saveButton.setOnClickListener(saveButtonListener);
 
-        // create RecyclerView.Adapter to bind tags to the RecyclerView
-        adapter = new SearchesAdapter(
-                tags, itemClickListener, itemLongClickListener);
-        recyclerView.setAdapter(adapter);
+        // register the listener to search Twitter when user picks a tag
+        getListView().setOnItemClickListener(itemClickListener);
 
-        saveFloatingActionButton = (FloatingActionButton) findViewById(R.id.fab);
-        saveFloatingActionButton.setOnClickListener(saveButtonListener);
-        updateSaveFAB();
+        // set listener for user to delete/edit search
+        getListView().setOnItemLongClickListener(itemLongClickListener);
     }
 
-    // hide/show saveFloatingActionButton based on EditTexts' contents
-    private final TextWatcher textWatcher = new TextWatcher() {
+    // saveButtonListener
+    public OnClickListener saveButtonListener = new OnClickListener() {
         @Override
-        public void beforeTextChanged(CharSequence s, int start, int count,
-                                      int after) {
-        }
-
-        // hide/show the saveFloatingActionButton after user changes input
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-            updateSaveFAB();
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-        }
-    };
-
-    // shows or hides the saveFloatingActionButton
-    private void updateSaveFAB() {
-        // check if there is input in both EditTexts
-        if (queryEditText.getText().toString().isEmpty() || tagEditText.getText().toString().isEmpty()) {
-            saveFloatingActionButton.hide();
-        } else {
-            saveFloatingActionButton.show();
-        }
-    }
-
-    // saveButtonListener save a tag-query pair into SharedPreferences
-    private final OnClickListener saveButtonListener = new OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            String query = queryEditText.getText().toString();
-            String tag = tagEditText.getText().toString();
-
-            if (!query.isEmpty() && !tag.isEmpty()) {
-                // hide the virtual keyboard
-                ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(
-                        view.getWindowToken(), 0);
-
-                addTaggedSearch(tag, query);
-                queryEditText.setText(""); // clear queryEditText
+        public void onClick(View v) {
+            // create a new tag with queryEditText and tagEditText Values, not null
+            if (queryEditText.getText().length() > 0 && tagEditText.getText().length() > 0) {
+                addTaggedSearch(queryEditText.getText().toString(), tagEditText.getText().toString());
+                queryEditText.setText(""); // clears the editText field after saved
                 tagEditText.setText("");
-                queryEditText.setText(""); // clear queryEditText
+
+                // Hide keyboard after save
+                ((InputMethodManager) getSystemService(
+                        Context.INPUT_METHOD_SERVICE)).hideSoftInputFromInputMethod(
+                        tagEditText.getWindowToken(), 0);
+            }
+            // in the case that an editText field is empty
+            else {
+                // Create dialog
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setMessage(R.string.missingMessage);
+                builder.setPositiveButton(R.string.understand, null);
+
+                AlertDialog errorDialog = builder.create();
+                errorDialog.show();
             }
         }
     };
 
-    // add new search to file, then refresh all buttons
-    private void addTaggedSearch(String tag, String query) {
-        // get a SharedPreferences.Editor to store new tag/query pair
-        SharedPreferences.Editor preferencesEditor = savedSearches.edit();
-        preferencesEditor.putString(tag, query); // store current search
-        preferencesEditor.apply(); // store the updated preferences
-        // if tag is new, add to and sort tags, then display updated list
+    public OnItemClickListener itemClickListener = new OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            // get query and make a URL representation search for Twitter
+            String tag = ((TextView) view).getText().toString();
+            String urlString = getString(R.string.searchURL) +
+                    Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
+
+            // create an intent to send the search to a browser
+            Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlString));
+            startActivity(webIntent); // Launches browsers with url
+        }
+    };
+
+    public OnItemLongClickListener itemLongClickListener = new OnItemLongClickListener() {
+        @Override
+        public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+            // get string for long touched tag
+            final String tag = ((TextView) view).getText().toString();
+
+            // alert the user
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle(getString(R.string.sharedEditDelTitle, tag));
+
+            // set list of items in dialog
+            builder.setItems(R.array.dialog_items, new DialogInterface.OnClickListener() {
+                // respond to user touch with options
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    switch (which) {
+                        case 0: // share
+                            shareSearch(tag);
+                            break;
+                        case 1: // edit
+                            tagEditText.setText(tag);
+                            queryEditText.setText(savedSearches.getString(tag, ""));
+                            break;
+                        case 2: // delete
+                            deleteSearch(tag);
+                            break;
+                    }
+                }
+            });
+
+            // set negative button
+            builder.setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
+                // for cancel button
+                public void onClick(DialogInterface dialog, int id) {
+                    dialog.cancel();
+                }
+            });
+
+            builder.create().show();
+            return true;
+        }
+    };
+
+    private void addTaggedSearch(String query, String tag) {
+        SharedPreferences.Editor prefEditor = savedSearches.edit();
+        prefEditor.putString(tag, query); // stores the search
+        prefEditor.apply(); //commit stored search
+
+        // if new tag, add and sort
         if (!tags.contains(tag)) {
-            tags.add(tag); // add new tag
+            tags.add(tag);
             Collections.sort(tags, String.CASE_INSENSITIVE_ORDER);
-            adapter.notifyDataSetChanged(); //
+            adapter.notifyDataSetChanged(); // rebinds tags to ListView
         }
     }
-// itemClickListener launches web browser to display search results
-    private final OnClickListener itemClickListener =
-             new OnClickListener() {
-         @Override
-         public void onClick(View view) {
-             // get query string and create a URL representing the search
-             String tag = ((TextView) view).getText().toString();
-             String urlString = getString(R.string.search_URL)+
-                     Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
-            // create an Intent to launch a web browser
-             Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                     Uri.parse(urlString));
-             startActivity(webIntent);
-             }
-    };
-
-
-    private final View.OnLongClickListener itemLongClickListener =
-             new View.OnLongClickListener() {
-         @Override
-         public boolean onLongClick(View view) {
-             // get the tag that the user long touched
-             final String tag = ((TextView) view).getText().toString();
-
-             // create a new AlertDialog
-             AlertDialog.Builder builder =
-                     new AlertDialog.Builder(MainActivity.this);
-
-             // set the AlertDialog's title
-             builder.setTitle(
-                     getString(R.string.share_edit_delete_title, tag));
-
-             builder.setItems(R.array.dialog_items,
-                     new DialogInterface.OnClickListener() {
-             @Override
-             public void onClick(DialogInterface dialog, int which) {
-                 switch (which){
-                     case 0: // share
-                         shareSearch(tag);
-                         break;
-                     case 1: // edit
-                         // set EditTexts to match chosen tag and query
-                         tagEditText.setText(tag);
-                         queryEditText.setText(
-                                 savedSearches.getString(tag, ""));
-                         break;
-                     case 2: // delete
-                         deleteSearch(tag);
-                         break;
-                     }
-                 }
-             });
-        // set the AlertDialog's negative Button
-         builder.setNegativeButton(getString(R.string.cancel), null);
-
-         builder.create().show(); // display the AlertDialog
-         return true;
-         }
-    };
 
     private void shareSearch(String tag) {
-         // create the URL representing the search
-         String urlString = getString(R.string.search_URL) +
-                 Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
+        // create string to represent the url
+        String urlString = getString(R.string.searchURL) +
+                Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
+
         // create Intent to share urlString
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT,
-                getString(R.string.share_subject));
-        shareIntent.putExtra(Intent.EXTRA_TEXT,
-                getString(R.string.share_message, urlString));
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_subject));
+        shareIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_message));
         shareIntent.setType("text/plain");
 
-        // display apps that can share plain text
-        startActivity(Intent.createChooser(shareIntent,
-                getString(R.string.share_search)));
+        // display apps that can share this text
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_search)));
     }
 
     private void deleteSearch(final String tag) {
-         // create a new AlertDialog and set its message
-         AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
-         confirmBuilder.setMessage(getString(R.string.confirm_message, tag));
+        // create alert
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
 
-         // configure the negative (CANCEL) Button
-         confirmBuilder.setNegativeButton(getString(R.string.cancel), null);
-        // configure the positive (DELETE) Button
-         confirmBuilder.setPositiveButton(getString(R.string.delete),
-                 new DialogInterface.OnClickListener() {
-         public void onClick(DialogInterface dialog, int id) {
-                 tags.remove(tag); // remove tag from tags
+        // set alert message
+        confirmBuilder.setMessage(getString(R.string.confirm_message, tag));
 
-                 // get SharedPreferences.Editor to remove saved search
-                 SharedPreferences.Editor preferencesEditor =
-                         savedSearches.edit();
-                 preferencesEditor.remove(tag); // remove search
-                 preferencesEditor.apply(); // save the changes
+        // set negative button
+        confirmBuilder.setNegativeButton(getString(R.string.cancel), new DialogInterface.OnClickListener() {
+            // when cancel is clicked
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();
+            }
+        });
 
-                 // rebind tags to RecyclerView to show updated list
+        // set positive button
+        confirmBuilder.setPositiveButton(getString(R.string.delete), new DialogInterface.OnClickListener() {
+            // when delete is clicked
+            public void onClick(DialogInterface dialog, int id) {
+                tags.remove(tag);
 
-                 }
-         });
-         confirmBuilder.create().show();
+                // remove from sharedpref
+                SharedPreferences.Editor prefEditor = savedSearches.edit();
+                prefEditor.remove(tag); // remove search
+                prefEditor.apply(); // commit change
+
+                // rebind tags from ArrayList to ListView
+                adapter.notifyDataSetChanged();
+            }
+        });
+
+        // display dialog
+        confirmBuilder.create().show();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

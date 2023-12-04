@@ -12,4 +12,10 @@
     <string name="share_search">Compartir Búsqueda a:</string>
     <string name="confirm_message">¿Estás seguro de que quieres borrar la búsqueda &quot;%s&quot;?</string>
     <string name="delete">Borrar</string>
+    <string name="missingMessage">Te falta una consulta o una etiqueta</string>
+    <string name="understand">Entiendo</string>
+    <string name="searchURL">http://mobile.twitter.com/search/</string>
+    <string name="sharedEditDelTitle">Compartir, Editar, o Eliminar una etiqueta: \"%s\"</string>
+    <string name="action_settings">Configuraciones</string>
+
 </resources>
